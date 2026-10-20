@@ -2,24 +2,23 @@
 import { useState } from 'react';
 import { runGitPushRoutine } from './actions';
 
-export default function LaunchpadCockpitClient({ viewerUrl }) {
-    const [syncStatus, setSyncStatus] = useState(null); // 'syncing' | 'success' | 'pristine' | 'failed'
+export default function LaunchpadCockpitClient({ viewerUrl, initialHasChanges }) {
+    const [hasChanges, setHasChanges] = useState(initialHasChanges);
+    const [syncStatus, setSyncStatus] = useState(null); // 'syncing' | 'success' | 'failed'
     const [statusMessage, setStatusMessage] = useState('');
 
     const handleGitSync = async () => {
+        if (!hasChanges) return; // Guard clause to kill execution on locked states
+        
         setSyncStatus('syncing');
-        setStatusMessage('ANALYZING LOCAL DATA REVISIONS... [SYNCING]');
+        setStatusMessage('ANALYZING DATABASE MATRIX... DISPATCHING CLOUD SNAPSHOT... [SYNCING]');
         
         const result = await runGitPushRoutine();
         
         if (result.success) {
-            if (result.changesDetected === false) {
-                setSyncStatus('pristine');
-                setStatusMessage('WORKSPACE PRISTINE // NO REVISIONS DETECTED ON HARD DRIVE.');
-            } else {
-                setSyncStatus('success');
-                setStatusMessage('UPSTREAM REVISIONS DISPATCHED // CLOUD SYNCHRONIZED.');
-            }
+            setSyncStatus('success');
+            setStatusMessage('UPSTREAM REVISIONS DISPATCHED // CLOUD SYNCHRONIZED.');
+            setHasChanges(false); // Relock the button since changes were pushed successfully
             setTimeout(() => { setSyncStatus(null); }, 5000); 
         } else {
             setSyncStatus('failed');
@@ -28,12 +27,6 @@ export default function LaunchpadCockpitClient({ viewerUrl }) {
     };
 
     return (
-        /* 
-           DYNAMIC VIEWPORT BOUNDARY FIX: 
-           Using h-[100dvh] layout layers with zero padding caps locks the main card wrapper 
-           directly to the mobile screen boundary frame to eliminate the 1cm top-to-bottom drag bounce, 
-           while leaving pinch-to-zoom browser gestures fully functional.
-        */
         <main className="h-[100dvh] w-screen bg-[#090b14] text-[#a9b2c3] font-mono flex flex-col justify-center items-center relative overflow-hidden">
             
             {/* Moody Atmospheric Twilight Gradient Blur Overlays */}
@@ -42,7 +35,7 @@ export default function LaunchpadCockpitClient({ viewerUrl }) {
 
             <div className="w-full max-w-[320px] px-4 box-border relative z-10 flex flex-col gap-5">
                 
-                {/* REBRANDED MEMPALACE HEADER */}
+                {/* BRAND HEADER */}
                 <div className="flex flex-col gap-1 text-center">
                     <h1 className="text-xs font-black tracking-[0.35em] text-[#e2e8f0] uppercase">
                         ⚡ MEMPALACE
@@ -60,14 +53,13 @@ export default function LaunchpadCockpitClient({ viewerUrl }) {
                     <div className={`p-3 border rounded text-[9px] font-bold tracking-wider uppercase transition-all duration-300 text-center leading-relaxed ${
                         syncStatus === 'syncing' ? 'bg-[#00f0ff]/5 border-[#00f0ff]/20 text-[#00f0ff]' :
                         syncStatus === 'success' ? 'bg-[#00ff88]/5 border-[#00ff88]/20 text-[#00ff88]' :
-                        syncStatus === 'pristine' ? 'bg-[#ff8800]/5 border-[#ff8800]/30 text-[#ffaa00] shadow-[0_0_8px_rgba(255,136,0,0.1)]' :
                         'bg-[#ff0055]/5 border-[#ff0055]/20 text-[#ff0055]'
                     }`}>
                         {statusMessage}
                     </div>
                 )}
 
-                {/* HIGH-DENSITY DEEP TWILIGHT INTERACTION LINKS ROW DECKS */}
+                {/* HIGH-DENSITY INTERACTION NAVIGATION LINKS */}
                 <div className="flex flex-col gap-2.5 w-full">
                     <a 
                         href="/add" 
@@ -103,18 +95,32 @@ export default function LaunchpadCockpitClient({ viewerUrl }) {
                         <span className="text-[#3b4261] text-[10px] group-hover:text-[#ffaa00] transition">➔</span>
                     </a>
 
-                    {/* REDESIGNED: INTERACTIVE REVISION SAVE BUTTON FOR NATIVE SYSTEM ACTIONS */}
-                    <button 
-                        type="button" 
-                        disabled={syncStatus === 'syncing'}
-                        onClick={handleGitSync}
-                        className={`group bg-[#1a1215] border border-[#ff4500]/20 hover:border-[#ff4500]/50 hover:bg-[#201416] p-3.5 rounded text-xs font-black tracking-widest text-[#ff5500] transition duration-150 active:scale-[0.98] flex items-center justify-between w-full cursor-pointer disabled:opacity-40 disabled:pointer-events-none mt-1 ${
-                            syncStatus === 'syncing' ? 'animate-pulse' : ''
-                        }`}
-                    >
-                        <span>🚀 SAVE TO CLOUD</span>
-                        <span className="text-[#ff4500]/40 text-[10px]">✓</span>
-                    </button>
+                    {/* 
+                       DYNAMIC CONDITIONAL DOCK BUTTON:
+                       If local drive file updates exist, renders active with vibrant twilight orange tones.
+                       If pristine, locks out mouse/touch clicks programmatically and visually grays out.
+                    */}
+                    {hasChanges ? (
+                        <button 
+                            type="button" 
+                            onClick={handleGitSync}
+                            className={`group bg-[#161012] border border-[#ff4500]/30 hover:border-[#ff4500]/60 hover:bg-[#241215] p-3.5 rounded text-xs font-black tracking-widest text-[#ff5500] transition duration-150 active:scale-[0.98] flex items-center justify-between w-full cursor-pointer mt-1 ${
+                                syncStatus === 'syncing' ? 'animate-pulse' : ''
+                            }`}
+                        >
+                            <span>🚀 SAVE TO CLOUD</span>
+                            <span className="text-[#ff4500]/40 text-[10px]">✓</span>
+                        </button>
+                    ) : (
+                        <button 
+                            type="button" 
+                            disabled
+                            className="bg-[#11121a] border border-[#1f2335] text-[#424b61] p-3.5 rounded text-xs font-bold tracking-widest flex items-center justify-between w-full cursor-not-allowed mt-1 opacity-50 select-none"
+                        >
+                            <span>🔒 MAKE CHANGES TO SAVE</span>
+                            <span className="text-[10px]">✖</span>
+                        </button>
+                    )}
                 </div>
 
                 <div className="text-[7.5px] text-[#333b4f] tracking-widest text-center uppercase mt-1">

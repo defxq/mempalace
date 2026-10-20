@@ -1,17 +1,36 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-export default function AddClientForm({ activeCategories, saveAction }) {
-    // Standard React Switch State: 'flashcard' | 'blog'
+export default function AddClientForm({ activeCategories, categoryArchetypeMap, saveAction }) {
+    // Dropdown track state settings
+    const [selectedCategory, setSelectedCategory] = useState(activeCategories[0] || 'Linux Core');
+    const [customCategory, setCustomCategory] = useState('');
+    const [sectionIndex, setSectionIndex] = useState('General');
+
+    // Master operational layout switch tracker: 'flashcard' | 'blog'
     const [activeWorkspaceMode, setActiveWorkspaceMode] = useState('flashcard');
+    
+    // Safety lock tracker handles locking navigation tabs out of sight
+    const [isLayoutLocked, setIsLayoutLocked] = useState(false);
     const [contentMarkdown, setContentMarkdown] = useState('');
 
-    const triggerModeToggle = (modeTarget) => {
-        if (typeof document !== 'undefined' && document.activeElement) {
-            document.activeElement.blur(); 
+    // SMART INTERACTION GUARD ROUTINE:
+    // Tracks adjustments across dropdown changes and text strings to lock design archetypes
+    useEffect(() => {
+        if (customCategory.trim() !== '') {
+            // Unlocks toggling parameters for entirely fresh categories
+            setIsLayoutLocked(false);
+        } else {
+            // Locks the layout view directly to the existing archetype saved inside your database
+            const savedArchetype = categoryArchetypeMap[selectedCategory];
+            if (savedArchetype) {
+                setActiveWorkspaceMode(savedArchetype);
+                setIsLayoutLocked(true);
+            } else {
+                setIsLayoutLocked(false);
+            }
         }
-        setActiveWorkspaceMode(modeTarget);
-    };
+    }, [selectedCategory, customCategory, categoryArchetypeMap]);
 
     const injectCodeMarkup = (type) => {
         const textarea = document.getElementById('editor-textarea');
@@ -20,7 +39,6 @@ export default function AddClientForm({ activeCategories, saveAction }) {
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
         const selection = textarea.value.substring(start, end);
-
         if (!selection) return;
 
         let wrappedString = '';
@@ -35,47 +53,62 @@ export default function AddClientForm({ activeCategories, saveAction }) {
     };
     return (
         <main className="min-h-screen bg-[#060810] text-[#c9d1d9] p-4 sm:p-6 font-mono select-none">
-            {/* Mobile Dashboard Header Layout */}
+            {/* Header Dashboard Control Banner Layout */}
             <header className="flex flex-col gap-3 border-b border-[#30363d] pb-4 mb-5 max-w-[800px] mx-auto">
                 <div className="flex justify-between items-center">
                     <h1 className="text-xs font-black tracking-[0.25em] text-[#00f0ff] uppercase drop-shadow-[0_0_6px_rgba(0,240,255,0.3)]">
-                        ⚡ BLITZ // LOG.WORKSPACE
+                        ⚡ MEMPALACE // GUARD.WORKSPACE
                     </h1>
                     <a href="/" className="text-xs text-[#8b949e] hover:text-white font-bold decoration-none">
                         ✕ Close
                     </a>
                 </div>
                 
-                {/* Clean, Non-Mixed Tab Switcher Controls */}
+                {/* 
+                   DYNAMIC ARCHETYPE TAB SWITCHER:
+                   If an existing category is chosen, this selector locks up visually and programmatically, 
+                   preventing cross-type entries from polluting your database cards layout grid.
+                */}
                 <div className="flex bg-[#111422] p-1 rounded border border-[#30363d] w-full relative z-50">
                     <button 
                         type="button" 
-                        onClick={() => triggerModeToggle('flashcard')} 
-                        className={`flex-1 text-center py-2.5 rounded text-xs font-bold transition cursor-pointer select-none active:scale-95 ${activeWorkspaceMode === 'flashcard' ? 'bg-[#30363d] text-white border border-[#8b949e]' : 'text-[#8b949e]'}`}
+                        disabled={isLayoutLocked}
+                        onClick={() => setActiveWorkspaceMode('flashcard')} 
+                        className={`flex-1 text-center py-2.5 rounded text-xs font-bold transition cursor-pointer select-none active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${activeWorkspaceMode === 'flashcard' ? 'bg-[#30363d] text-white border border-[#8b949e]' : 'text-[#8b949e]'}`}
                     >
-                        ⚡ CLI Matrix Cards
+                        ⚡ CLI Matrix Cards {isLayoutLocked && activeWorkspaceMode === 'flashcard' && '🔒'}
                     </button>
                     <button 
                         type="button" 
-                        onClick={() => triggerModeToggle('blog')} 
-                        className={`flex-1 text-center py-2.5 rounded text-xs font-bold transition cursor-pointer select-none active:scale-95 ${activeWorkspaceMode === 'blog' ? 'bg-[#30363d] text-white border border-[#8b949e]' : 'text-[#8b949e]'}`}
+                        disabled={isLayoutLocked}
+                        onClick={() => setActiveWorkspaceMode('blog')} 
+                        className={`flex-1 text-center py-2.5 rounded text-xs font-bold transition cursor-pointer select-none active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${activeWorkspaceMode === 'blog' ? 'bg-[#30363d] text-white border border-[#8b949e]' : 'text-[#8b949e]'}`}
                     >
-                        🧠 Continuous Blogs
+                        🧠 Continuous Blogs {isLayoutLocked && activeWorkspaceMode === 'blog' && '🔒'}
                     </button>
                 </div>
+                {isLayoutLocked && (
+                    <p className="text-[10px] text-[#ffaa00] tracking-wide uppercase text-center mt-1 animate-pulse">
+                        ⚠️ Category profile design archetype locked to protect model rendering consistency.
+                    </p>
+                )}
             </header>
 
-            {/* MASTER NATIVE ACTION SUBMIT CONTAINER */}
+            {/* MASTER NATIVE ACTION SUBMIT ACTION DECK */}
             <form action={saveAction} className="max-w-[800px] mx-auto flex flex-col gap-4 relative z-10">
-                {/* Hidden layout state tracker to tell your backend server action which mode is processing */}
                 <input type="hidden" name="activeLayoutMode" value={activeWorkspaceMode} />
 
-                {/* Shared Configuration Selection Deck */}
+                {/* Configuration Input Panel */}
                 <div className="bg-[#111422] border border-[#30363d] rounded p-4 flex flex-col gap-4 w-full">
                     <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1 flex flex-col gap-1.5">
                             <label className="text-[#8b949e] text-xs">Category Track:</label>
-                            <select name="nodeCategorySelect" className="bg-[#060810] border border-[#30363d] text-white p-2.5 rounded text-xs outline-none">
+                            <select 
+                                name="nodeCategorySelect" 
+                                value={selectedCategory}
+                                onChange={(e) => setSelectedCategory(e.target.value)}
+                                className="bg-[#060810] border border-[#30363d] text-white p-2.5 rounded text-xs outline-none"
+                            >
                                 {activeCategories.length > 0 ? activeCategories.map(cat => (
                                     <option key={cat} value={cat}>{cat}</option>
                                 )) : (
@@ -89,21 +122,27 @@ export default function AddClientForm({ activeCategories, saveAction }) {
                         </div>
                         <div className="flex-1 flex flex-col gap-1.5">
                             <label className="text-[#8b949e] text-xs">Or New Custom Category:</label>
-                            <input type="text" name="nodeCustomCategory" placeholder="e.g. Docker Pipelines" className="bg-[#060810] border border-[#30363d] text-white p-2.5 rounded text-xs outline-none focus:border-[#58a6ff]" />
+                            <input 
+                                type="text" 
+                                name="nodeCustomCategory" 
+                                value={customCategory}
+                                onChange={(e) => setCustomCategory(e.target.value)}
+                                placeholder="e.g. Docker Pipelines" 
+                                className="bg-[#060810] border border-[#30363d] text-white p-2.5 rounded text-xs outline-none focus:border-[#58a6ff]" 
+                            />
                         </div>
                     </div>
 
                     <div className="flex flex-col gap-1.5">
                         <label className="text-[#8b949e] text-xs">Section Index:</label>
-                        <input type="text" name="nodeSection" defaultValue="General" placeholder="e.g. account-removal" className="bg-[#060810] border border-[#30363d] text-white p-2.5 rounded text-xs outline-none focus:border-[#58a6ff]" />
+                        <input type="text" name="nodeSection" value={sectionIndex} onChange={(e) => setSectionIndex(e.target.value)} placeholder="e.g. account-removal" className="bg-[#060810] border border-[#30363d] text-white p-2.5 rounded text-xs outline-none focus:border-[#58a6ff]" />
                     </div>
                 </div>
 
-                {/* DECOUPLED INDEPENDENT COMPONENT RENDERING SECTION */}
+                {/* Form Rendering Canvas */}
                 <div className="bg-[#111422] border border-[#30363d] rounded p-4 w-full">
                     {activeWorkspaceMode === 'flashcard' ? (
-                        /* FLASHCARD MODE PANELS ONLY */
-                        <div className="flex flex-col gap-4 animate-fadeIn">
+                        <div className="flex flex-col gap-4">
                             <div className="flex flex-col sm:flex-row gap-4">
                                 <div className="flex-1 flex flex-col gap-1.5">
                                     <label className="text-[#34d399] text-xs font-bold">Base Command Target Name:</label>
@@ -124,8 +163,7 @@ export default function AddClientForm({ activeCategories, saveAction }) {
                             </div>
                         </div>
                     ) : (
-                        /* BLOG MODE PANELS ONLY */
-                        <div className="flex flex-col gap-4 animate-fadeIn">
+                        <div className="flex flex-col gap-4">
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-[#58a6ff] text-xs font-bold">Article Workflow / Blog Section Heading Title:</label>
                                 <input type="text" name="nodeTitle" placeholder="e.g. Deep Dive: Understanding Git Architecture" className="bg-[#060810] border border-[#30363d] text-white p-2.5 rounded text-xs outline-none focus:border-[#58a6ff]" />

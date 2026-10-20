@@ -7,14 +7,24 @@ import { getVaultDatabase } from '../actions';
 import AddClientForm from './AddClientForm';
 
 async function AddFormPrefetcher() {
-    // CACHE BUSTER CORE ROUTINE:
     // Accessing headers inside the Suspense boundary handles cache busting correctly
     await headers();
 
     const baselineDatabase = await getVaultDatabase();
-    const activeCategories = [...new Set(baselineDatabase.map((item) => item.tab || item.category))].filter(Boolean);
+    
+    // Build a structural map tracking the exact layout archetype of every existing category track
+    const categoryArchetypeMap = {};
+    baselineDatabase.forEach(item => {
+        const catKey = item.tab || item.category;
+        if (catKey) {
+            const isCard = item.layoutMode === 'lookup' || item.command;
+            categoryArchetypeMap[catKey] = isCard ? 'flashcard' : 'blog';
+        }
+    });
 
-    // DIRECT SERVER ACTION PIPELINE
+    const activeCategories = Object.keys(categoryArchetypeMap);
+
+    // DIRECT HARDWARE SERVER ACTION PIPELINE
     async function executeHardDriveInsertion(formData) {
         'use server';
         
@@ -52,7 +62,10 @@ async function AddFormPrefetcher() {
                 flagEntriesRaw.split('\n').forEach(line => {
                     const sections = line.split(':');
                     if (sections.length >= 2) {
-                        flagArray.push({ flag: sections.trim(), desc: sections.slice(1).join(':').trim() });
+                        flagArray.push({ 
+                            flag: sections[0].trim(), 
+                            desc: sections.slice(1).join(':').trim() 
+                        });
                     } else if (line.trim()) {
                         flagArray.push({ flag: line.trim(), desc: "Parameter execution enabled." });
                     }
@@ -74,23 +87,32 @@ async function AddFormPrefetcher() {
         const compositeDatabaseArray = [...currentPayload, newRecordNode];
         fs.writeFileSync(coreVaultPath, JSON.stringify(compositeDatabaseArray, null, 2), 'utf-8');
 
+        // Automatically stage changes to clear tracking flags for your home deck status banner
+        const repoDir = path.resolve(process.cwd(), '../repo-1-viewer');
+        try {
+            const { execSync } = require('child_process');
+            execSync(`cd ${repoDir} && git add data.json`);
+        } catch (gitErr) {
+            console.warn("Index staging deferred.");
+        }
+
         redirect('/manage');
     }
 
     return (
         <AddClientForm 
             activeCategories={activeCategories} 
+            categoryArchetypeMap={categoryArchetypeMap}
             saveAction={executeHardDriveInsertion} 
         />
     );
 }
 
-// Master Route: Streams a placeholder background canvas to completely kill prerendering build warnings
 export default function AddRecordGatekeeper() {
     return (
         <Suspense fallback={
-            <div style={{ backgroundColor: '#060810', color: '#00f0ff', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontSize: '12px', trackingWith: '0.25em' }}>
-                ⚡ INITIALIZING LOG VIEW DESK ENGINE VECTOR...
+            <div style={{ backgroundColor: '#060810', color: '#ff8800', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontSize: '12px', trackingWidth: '0.25em' }}>
+                ⚡ SECURING WORKSPACE GATEKEEPER LAYOUT...
             </div>
         }>
             <AddFormPrefetcher />

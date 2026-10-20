@@ -1,25 +1,26 @@
 import { Suspense } from 'react';
 import { headers } from 'next/headers';
+import { checkLocalRevisionsExist } from './actions';
 import LaunchpadCockpitClient from './LaunchpadCockpitClient';
 
-// Server-side prefetch reads request origin headers to calculate network IPs
 async function ServerHeaderIpPrefetcher() {
-    const requestHeaders = await headers();
-    const hostHeader = requestHeaders.get('host') || '192.168.1.5:3000';
+    // Keep headers buster intact to safely handle dynamic runtime rendering
+    await headers();
     
-    // Isolate your laptop's current network IP address pointer profile
-    const activeHostString = hostHeader.split(':')[0];
-    const computedViewerUrl = `http://${activeHostString}:8080`;
+    // Direct, absolute production reference link to your live Vercel deployment site
+    const liveVercelUrl = 'https://mempalace-v.vercel.app';
+    
+    // Live hardware check on your laptop's repository status
+    const revisionsExist = await checkLocalRevisionsExist();
 
-    return <LaunchpadCockpitClient viewerUrl={computedViewerUrl} />;
+    return <LaunchpadCockpitClient viewerUrl={liveVercelUrl} initialHasChanges={revisionsExist} />;
 }
 
-// Master Entry Route: Enforces a suspense border boundary to completely kill prerendering build warnings
 export default function HomeGateHub() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen bg-[#070b12] text-[#00f0ff] font-mono flex items-center justify-center text-xs tracking-widest animate-pulse">
-                ⚡ LINKING TO NerveGear NETWORKS...
+            <div className="min-h-screen bg-[#090b14] text-[#ff8800] font-mono flex items-center justify-center text-xs tracking-widest animate-pulse">
+                ⚡ SECURING MEMPALACE TIMELINE LINK INDEX...
             </div>
         }>
             <ServerHeaderIpPrefetcher />

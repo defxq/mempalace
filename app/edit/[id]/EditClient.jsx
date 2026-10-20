@@ -35,7 +35,7 @@ export default function EditClient({ activeItemNode }) {
                 return dbItem;
             });
 
-            const response = await fetch(`${hostOrigin}/api/save`, {
+                       const response = await fetch(`${hostOrigin}/api/save`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(finalizedDataset)
@@ -43,9 +43,11 @@ export default function EditClient({ activeItemNode }) {
             
             const status = await response.json();
             if (status.success) {
+                // FIXED: Direct browser re-route clears cached parameters out of the layout stream
                 alert("Changes saved onto hard disk successfully!");
                 window.location.href = '/manage';
             }
+
         } catch (err) {
             alert("Network connection timed out.");
         }

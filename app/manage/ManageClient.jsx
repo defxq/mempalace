@@ -5,14 +5,29 @@ export default function ManageClient({ initialLibrary }) {
     const [library, setLibrary] = useState(initialLibrary);
     const [searchQuery, setSearchString] = useState('');
 
-    const handleNativeEraseSubmit = async (e, targetId) => {
-        if (!confirm("Are you absolutely sure you want to permanently erase this ledger record?")) {
-            e.preventDefault();
-            return;
-        }
+    // FIXED DELETE PIPELINE: Submits requests asynchronously over Wi-Fi without page reloads
+    const executeNetworkDelete = async (targetId) => {
+        if (!confirm("Are you absolutely sure you want to permanently erase this ledger record?")) return;
         
-        // Optimistically clean out the row instantly on your screen view mapping canvas
-        setLibrary(prev => prev.filter(item => item.id !== targetId));
+        try {
+            const hostOrigin = window.location.origin;
+            const response = await fetch(`${hostOrigin}/api/delete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: String(targetId) })
+            });
+            
+            const status = await response.json();
+            if (status.success) {
+                alert("Record permanently dropped from database ledger!");
+                // Optimistically clear the row instantly on your screen view mapping canvas
+                setLibrary(prev => prev.filter(item => item.id !== targetId));
+            } else {
+                alert("Server rejected deletion request.");
+            }
+        } catch (err) {
+            alert("Wi-Fi network connection timed out.");
+        }
     };
 
     const filteredListings = library.filter(item => {
@@ -25,11 +40,11 @@ export default function ManageClient({ initialLibrary }) {
 
     return (
         <main className="min-h-screen bg-[#0d1117] text-[#c9d1d9] p-4 sm:p-6 font-mono select-none">
-            {/* Dashboard Header */}
+            {/* Dashboard Header Layout */}
             <div className="flex flex-col gap-2 border-b border-[#30363d] pb-4 mb-5">
                 <div className="flex justify-between items-center">
                     <h1 className="text-xs font-bold tracking-wider text-white uppercase">
-                        ⚡ BLITZ // SYSTEM.MANAGEMENT.DECK
+                        ⚡ MEMPALACE // CENTRAL.DECK
                     </h1>
                     <a href="/" className="text-xs text-[#58a6ff] hover:underline font-bold decoration-none">
                         ← Dashboard
@@ -71,7 +86,7 @@ export default function ManageClient({ initialLibrary }) {
                                         {isCardMode ? (item.command || item.syntax) : item.title}
                                     </div>
 
-                                    {/* TOUCH-PROOF SUBNET CONTROL ACTIONS CONTAINER */}
+                                    {/* TOUCH-PROOF CONTROL ACTIONS */}
                                     <div className="flex gap-2 border-t border-[#30363d] pt-2.5 mt-1 items-center">
                                         <a 
                                             href={`/edit/${item.id}`} 
@@ -79,22 +94,13 @@ export default function ManageClient({ initialLibrary }) {
                                         >
                                             ✏️ Edit
                                         </a>
-
-                                        {/* FIXED ACTION WRAPPER: Native server pipeline form execution kills subnet blocks */}
-                                        <form 
-                                            action="/api/delete" 
-                                            method="POST" 
-                                            onSubmit={(e) => handleNativeEraseSubmit(e, item.id)}
-                                            className="m-0 p-0"
+                                        <button 
+                                            type="button" 
+                                            onClick={() => executeNetworkDelete(item.id)} 
+                                            className="bg-transparent border border-transparent text-[#f43f5e] hover:underline px-4 py-1.5 rounded font-bold text-xs cursor-pointer active:scale-95 transition"
                                         >
-                                            <input type="hidden" name="id" value={item.id} />
-                                            <button 
-                                                type="submit" 
-                                                className="bg-transparent border border-transparent text-[#f43f5e] hover:underline px-4 py-1.5 rounded font-bold text-xs cursor-pointer active:scale-95 transition"
-                                            >
-                                                🗑️ Delete
-                                            </button>
-                                        </form>
+                                            🗑️ Delete
+                                        </button>
                                     </div>
                                 </div>
                             </div>
