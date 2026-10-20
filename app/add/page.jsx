@@ -55,7 +55,7 @@ async function AddFormPrefetcher() {
             const baseCommand = formData.get('nodeCommand')?.toString().trim() || '';
             const executionSyntax = formData.get('nodeSyntax')?.toString().trim() || '';
             const flagEntriesRaw = formData.get('nodeFlags')?.toString() || '';
-            const coreNotes = formData.get('nodeNotes')?.toString().trim() || 'Quick reference.';
+            const coreNotes = formData.get('nodeNotes')?.toString().trim() || '';
 
             const flagArray = [];
             if (flagEntriesRaw.trim()) {
@@ -67,14 +67,17 @@ async function AddFormPrefetcher() {
                             desc: sections.slice(1).join(':').trim() 
                         });
                     } else if (line.trim()) {
-                        flagArray.push({ flag: line.trim(), desc: "Parameter execution enabled." });
+                        flagArray.push({ flag: line.trim(), desc: "" });
                     }
                 });
             }
 
             newRecordNode.command = baseCommand;
             newRecordNode.syntax = executionSyntax;
-            newRecordNode.flags = flagArray.length > 0 ? flagArray : [{ flag: "Default", desc: "Standard parameter." }];
+            
+            if (flagArray.length > 0) {
+                newRecordNode.flags = flagArray;
+            }
             newRecordNode.notes = coreNotes;
         } else {
             const articleTitle = formData.get('nodeTitle')?.toString().trim() || 'Untitled Log Entry';
@@ -87,7 +90,7 @@ async function AddFormPrefetcher() {
         const compositeDatabaseArray = [...currentPayload, newRecordNode];
         fs.writeFileSync(coreVaultPath, JSON.stringify(compositeDatabaseArray, null, 2), 'utf-8');
 
-        // Automatically stage changes to clear tracking flags for your home deck status banner
+        // Automatically stage changes inside the local git tracker index loops
         const repoDir = path.resolve(process.cwd(), '../repo-1-viewer');
         try {
             const { execSync } = require('child_process');
@@ -98,6 +101,7 @@ async function AddFormPrefetcher() {
 
         redirect('/manage');
     }
+
 
     return (
         <AddClientForm 
