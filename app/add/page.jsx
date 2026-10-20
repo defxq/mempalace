@@ -3,11 +3,14 @@ import { useState, useEffect } from 'react';
 
 export default function MobileWorkspaceEditor() {
     const [library, setLibrary] = useState([]);
+    const [activeWorkspaceMode, setActiveWorkspaceMode] = useState('flashcard');
 
-    // Shared Category Global States
+    // Shared Category States
     const [categoryName, setCategoryName] = useState('Git Mechanics');
     const [customCategoryInput, setCustomCategoryInput] = useState('');
-    const [subSection, setSubSection] = useState('General');
+    
+    // UPDATED LABEL STATE: Modified to exactly two words as requested
+    const [sectionIndex, setSectionIndex] = useState('General');
 
     // Flashcard Specific Fields
     const [baseCommand, setBaseCommand] = useState('');
@@ -19,21 +22,28 @@ export default function MobileWorkspaceEditor() {
     const [articleTitle, setArticleTitle] = useState('');
     const [contentMarkdown, setContentMarkdown] = useState('');
 
-    // Fetch baseline vault files from local Repo 1 server on render boot
     useEffect(() => {
         async function fetchVault() {
             try {
-                const res = await fetch('http://localhost:8080/data.json');
+                const currentHost = window.location.origin;
+                const res = await fetch(`${currentHost}/api/save?t=${Date.now()}`);
                 const data = await res.json();
                 setLibrary(data);
             } catch (err) {
-                console.warn("Baseline data.json context unavailable.");
+                console.warn("Baseline registry context offline.");
             }
         }
         fetchVault();
     }, []);
 
     const activeCategories = [...new Set(library.map((item) => item.tab || item.category))].filter(Boolean);
+
+    const triggerModeToggle = (modeTarget) => {
+        if (typeof document !== 'undefined' && document.activeElement) {
+            document.activeElement.blur(); 
+        }
+        setActiveWorkspaceMode(modeTarget);
+    };
 
     const injectCodeMarkup = (type) => {
         const textarea = document.getElementById('editor-textarea');
@@ -72,7 +82,7 @@ export default function MobileWorkspaceEditor() {
             id: String(Date.now()),
             tab: tabTarget,
             layoutMode: targetMode === 'flashcard' ? 'lookup' : 'concept',
-            section: subSection.trim() || 'General'
+            section: sectionIndex.trim() || 'General'
         };
 
         if (targetMode === 'flashcard') {
@@ -101,7 +111,8 @@ export default function MobileWorkspaceEditor() {
         setLibrary(updatedDatabasePayload);
 
         try {
-            const response = await fetch('/api/save', {
+            const currentHost = window.location.origin;
+            const response = await fetch(`${currentHost}/api/save`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updatedDatabasePayload)
@@ -117,12 +128,7 @@ export default function MobileWorkspaceEditor() {
     };
     return (
         <main className="min-h-screen bg-[#0d1117] text-[#c9d1d9] p-4 sm:p-6 font-mono select-none">
-            {/* 
-               PURE CSS TOGGLE STATE ENGINE:
-               We inject a hidden checkbox layout toggle element here. 
-               We also add custom style strings directly below it so that the mobile browser's 
-               hardware rendering stack swaps form views via raw CSS selector targets, bypassing JS state locks completely.
-            */}
+            {/* Pure CSS Toggle State Engine */}
             <input type="checkbox" id="form-layout-toggle" className="hidden peer" />
             
             <style dangerouslySetInnerHTML={{__html: `
@@ -140,23 +146,26 @@ export default function MobileWorkspaceEditor() {
             `}} />
 
             {/* Mobile Dashboard Header Layout */}
-            <header className="flex flex-col gap-3 border-b border-[#30363d] pb-4 mb-5">
-                <h1 className="text-xs font-bold tracking-wider text-white uppercase">
-                    ⚡ BLITZ // SYSTEM.LEDGER.EDITOR
-                </h1>
+            <header className="flex flex-col gap-3 border-b border-[#30363d] pb-4 mb-5 max-w-[800px] mx-auto">
+                <div className="flex justify-between items-center">
+                    <h1 className="text-xs font-bold tracking-wider text-white uppercase">
+                        ⚡ BLITZ // LOG.WORKSPACE
+                    </h1>
+                    <a href="/" className="text-xs text-[#58a6ff] hover:underline font-bold decoration-none">
+                        ← Dashboard
+                    </a>
+                </div>
                 
-                {/* NATIVE INTERACTION LABELS: Clicking these shifts the checkbox target value directly at the OS level */}
+                {/* Native Interaction Labels */}
                 <div className="flex bg-[#161b22] p-1 rounded border border-[#30363d] w-full relative z-50">
                     <label 
-                        id="btn-label-flashcard"
-                        htmlFor="form-layout-toggle"
+                        id="btn-label-flashcard" htmlFor="form-layout-toggle"
                         className="flex-1 text-center py-2.5 rounded text-xs font-bold transition cursor-pointer select-none active:scale-95"
                     >
                         ⚡ CLI Matrix Cards
                     </label>
                     <label 
-                        id="btn-label-blog"
-                        htmlFor="form-layout-toggle"
+                        id="btn-label-blog" htmlFor="form-layout-toggle"
                         className="flex-1 text-center py-2.5 rounded text-xs font-bold transition cursor-pointer select-none active:scale-95"
                     >
                         🧠 Continuous Blogs
@@ -189,14 +198,15 @@ export default function MobileWorkspaceEditor() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                    <label className="text-[#8b949e] text-xs">Skippable Sub-Section Mapping Anchor Index Link:</label>
-                    <input type="text" value={subSection} onChange={(e) => setSubSection(e.target.value)} placeholder="e.g. account-removal, port-scanning" className="bg-[#0d1117] border border-[#30363d] text-white p-2.5 rounded text-xs outline-none focus:border-[#58a6ff]" />
+                    {/* FIXED LABEL NAME: Exactly two words as requested */}
+                    <label className="text-[#8b949e] text-xs">Section Index:</label>
+                    <input type="text" value={sectionIndex} onChange={(e) => setSectionIndex(e.target.value)} placeholder="e.g. account-removal, port-scanning" className="bg-[#0d1117] border border-[#30363d] text-white p-2.5 rounded text-xs outline-none focus:border-[#58a6ff]" />
                 </div>
             </div>
-            {/* MASTER FORM PANES DECK CONTAINER WRAPPER */}
+            {/* Master Form Panes Deck Container Wrapper */}
             <div id="form-container" className="bg-[#161b22] border border-[#30363d] rounded-md p-4 max-w-[800px] mx-auto relative z-10">
                 
-                {/* FLASHCARD MODE LAYOUT VIEW PANEL BLOCK */}
+                {/* Flashcard View Panel Block */}
                 <div id="flashcard-form-pane" className="pt-2">
                     <div className="flex flex-col gap-4">
                         <div className="flex flex-col sm:flex-row gap-4">
@@ -223,7 +233,7 @@ export default function MobileWorkspaceEditor() {
                     </div>
                 </div>
 
-                {/* CONTINUOUS BLOG MODE LAYOUT VIEW PANEL BLOCK */}
+                {/* Continuous Blog View Panel Block */}
                 <div id="blog-form-pane" className="pt-2">
                     <div className="flex flex-col gap-4">
                         <div className="flex flex-col gap-1.5">

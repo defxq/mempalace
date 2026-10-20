@@ -28,7 +28,10 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
-, "app/components/FlashcardForm.jsx"  ],
+    "**/*.mts",
+    "app/components/FlashcardForm.jsx",
+    "app/page.jsx",
+    "app/manage/page.jsx"
+, "app/api/save/route.js"  ],
   "exclude": ["node_modules"]
 }
